@@ -54,12 +54,9 @@ The launch file can be configure at the command line with arguments, by changing
 |base_width|0.315|Width from one wheel edge to another in meters|
 
 ## Topics
-###Subscribed
+### Subscribed
 /cmd_vel [(geometry_msgs/Twist)](http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)  
 Velocity commands for the mobile base.
-###Published
+### Published
 /odom [(nav_msgs/Odometry)](http://docs.ros.org/api/nav_msgs/html/msg/Odometry.html)  
 Odometry output from the mobile base.
-
-#IF SOMETHING IS BROEKN:
-Please file an issue, it makes it far easier to keep track of what needs to be fixed. It also allows others that might have solved the problem to contribute.  If you are confused feel free to email me, I might have overlooked something in my readme.
