@@ -183,6 +183,7 @@ class Node:
 
         self.encodm = EncoderOdom(self.TICKS_PER_METER, self.BASE_WIDTH)
         self.last_set_speed_time = rospy.get_rostime()
+        self.stopped = True
 
         rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_callback)
 
@@ -200,11 +201,12 @@ class Node:
         r_time = rospy.Rate(10)
         while not rospy.is_shutdown():
 
-            if (rospy.get_rostime() - self.last_set_speed_time).to_sec() > 1:
+            if not self.stopped and (rospy.get_rostime() - self.last_set_speed_time).to_sec() > 1:
                 rospy.loginfo("Did not get command for 1 second, stopping")
                 try:
                     roboclaw.ForwardM1(self.address, 0)
                     roboclaw.ForwardM2(self.address, 0)
+                    self.stopped = True
                 except OSError as e:
                     rospy.logerr("Could not stop")
                     rospy.logdebug(e)
@@ -245,6 +247,7 @@ class Node:
 
     def cmd_vel_callback(self, twist):
         self.last_set_speed_time = rospy.get_rostime()
+        self.stopped = False
 
         linear_x = twist.linear.x
         if linear_x > self.MAX_SPEED:
