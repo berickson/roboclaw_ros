@@ -6,6 +6,7 @@
     <arg name="address" default="128"/>
     <arg name="max_speed" default="2.0"/>
     <arg name="ticks_per_meter" default="4342.2"/>
+    <arg name="left_motor_number" default="2"/>
     <arg name="base_width" default="0.315"/>
     <arg name="run_diag" default="true"/>
 
@@ -15,6 +16,7 @@
         <param name="~address" value="$(arg address)"/>
         <param name="~max_speed" value="$(arg max_speed)"/>
         <param name="~ticks_per_meter" value="$(arg ticks_per_meter)"/>
+        <param name="~left_motor_number" value="$(arg left_motor_number)"/>
         <param name="~base_width" value="$(arg base_width)"/>
     </node>
 

@@ -177,8 +177,9 @@ class Node:
         roboclaw.ResetEncoders(self.address)
 
         self.MAX_SPEED = float(rospy.get_param("~max_speed", "2.0"))
-        self.TICKS_PER_METER = float(rospy.get_param("~tick_per_meter", "4342.2"))
+        self.TICKS_PER_METER = float(rospy.get_param("~ticks_per_meter", "4342.2"))
         self.BASE_WIDTH = float(rospy.get_param("~base_width", "0.315"))
+        self.LEFT_MOTOR_NUMBER = int(rospy.get_param("~left_motor_number",1))
 
         self.encodm = EncoderOdom(self.TICKS_PER_METER, self.BASE_WIDTH)
         self.last_set_speed_time = rospy.get_rostime()
@@ -228,9 +229,16 @@ class Node:
                 rospy.logwarn("ReadEncM2 OSError: %d", e.errno)
                 rospy.logdebug(e)
 
-            if ('enc1' in vars()) and ('enc2' in vars()):
+            if (enc1 != None and enc2 != None):
                 rospy.logdebug(" Encoders %d %d" % (enc1, enc2))
-                self.encodm.update_publish(enc1, enc2)
+                if(self.LEFT_MOTOR_NUMBER == 1):
+                    enc_left = enc1
+                    enc_right = enc2
+                else:
+                    enc_left = enc2
+                    enc_right = enc1
+
+                self.encodm.update_publish(enc_left, enc_right)
 
                 self.updater.update()
             r_time.sleep()
@@ -258,7 +266,13 @@ class Node:
                 roboclaw.ForwardM1(self.address, 0)
                 roboclaw.ForwardM2(self.address, 0)
             else:
-                roboclaw.SpeedM1M2(self.address, vr_ticks, vl_ticks)
+                if(self.LEFT_MOTOR_NUMBER == 1):
+                    m1_ticks = vl_ticks
+                    m2_ticks = vr_ticks
+                else:
+                    m1_ticks = vr_ticks
+                    m2_ticks = vl_ticks
+                roboclaw.SpeedM1M2(self.address, m1_ticks, m2_ticks)
         except OSError as e:
             rospy.logwarn("SpeedM1M2 OSError: %d", e.errno)
             rospy.logdebug(e)
