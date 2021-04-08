@@ -74,8 +74,10 @@ class EncoderOdom:
         # TODO lets find a better way to deal with this error
         if abs(enc_left - self.last_enc_left) > 20000:
             rospy.logerr("Ignoring left encoder jump: cur %d, last %d" % (enc_left, self.last_enc_left))
+            self.last_enc_left = self.last_enc_left
         elif abs(enc_right - self.last_enc_right) > 20000:
             rospy.logerr("Ignoring right encoder jump: cur %d, last %d" % (enc_right, self.last_enc_right))
+            self.last_enc_right = self.last_enc_right
         else:
             vel_x, vel_theta = self.update(enc_left, enc_right)
             self.publish_odom(self.cur_x, self.cur_y, self.cur_theta, vel_x, vel_theta)
@@ -118,6 +120,8 @@ class EncoderOdom:
 
 class Node:
     def __init__(self):
+
+        self.twist = None
 
         self.ERRORS = {0x0000: (diagnostic_msgs.msg.DiagnosticStatus.OK, "Normal"),
                        0x0001: (diagnostic_msgs.msg.DiagnosticStatus.WARN, "M1 over current"),
@@ -210,6 +214,9 @@ class Node:
                 except OSError as e:
                     rospy.logerr("Could not stop")
                     rospy.logdebug(e)
+            else:
+                if self.twist != None:
+                    self.go_twist(self.twist)
 
             # TODO need find solution to the OSError11 looks like sync problem with serial
             status1, enc1, crc1 = None, None, None
@@ -246,8 +253,12 @@ class Node:
             r_time.sleep()
 
     def cmd_vel_callback(self, twist):
+        #rospy.loginfo("cmd_vel_callback")
         self.last_set_speed_time = rospy.get_rostime()
         self.stopped = False
+        self.twist = twist
+    
+    def go_twist(self, twist):
 
         linear_x = twist.linear.x
         if linear_x > self.MAX_SPEED:
