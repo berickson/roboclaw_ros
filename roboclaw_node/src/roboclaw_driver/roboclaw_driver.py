@@ -340,7 +340,7 @@ def _write1(address, cmd, val):
     return False
 
 
-def _write111(address, cmd, val1, val2):
+def _write11(address, cmd, val1, val2):
     trys = _trystimeout
     while trys:
         _sendcommand(address, cmd)
@@ -1083,7 +1083,7 @@ def ReadPinFunctions(address):
 
 
 def SetDeadBand(address, min, max):
-    return _write111(address, Cmd.SETDEADBAND, min, max)
+    return _write11(address, Cmd.SETDEADBAND, min, max)
 
 
 def GetDeadBand(address):
