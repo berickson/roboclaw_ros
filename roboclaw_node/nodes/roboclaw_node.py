@@ -156,7 +156,7 @@ class Node:
         try:
             roboclaw.Open(dev_name, baud_rate)
         except Exception as e:
-            rospy.logfatal("Could not connect to Roboclaw")
+            rospy.logfatal("Could not connect to Roboclaw to %s @ %s" % (dev_name, baud_rate))
             rospy.logdebug(e)
             rospy.signal_shutdown("Could not connect to Roboclaw")
 
@@ -177,7 +177,7 @@ class Node:
         else:
             rospy.logdebug(repr(version[1]))
 
-        roboclaw.SpeedM1M2(self.address, 0, 0)
+        roboclaw.SpeedAccelM1M2_2(self.address, 0, 0, 0, 0)
         roboclaw.ResetEncoders(self.address)
 
         self.MAX_SPEED = float(rospy.get_param("~max_speed", "2.0"))
@@ -276,7 +276,7 @@ class Node:
 
         try:
             # This is a hack way to keep a poorly tuned PID from making noise at speed 0
-            if vr_ticks is 0 and vl_ticks is 0:
+            if False and vr_ticks is 0 and vl_ticks is 0:
                 roboclaw.ForwardM1(self.address, 0)
                 roboclaw.ForwardM2(self.address, 0)
             else:
@@ -286,9 +286,9 @@ class Node:
                 else:
                     m1_ticks = vr_ticks
                     m2_ticks = vl_ticks
-                roboclaw.SpeedM1M2(self.address, m1_ticks, m2_ticks)
+                roboclaw.SpeedAccelM1M2_2(self.address, 0, m1_ticks, 0, m2_ticks)
         except OSError as e:
-            rospy.logwarn("SpeedM1M2 OSError: %d", e.errno)
+            rospy.logwarn("SpeedAccelM1M2_2 OSError: %d", e.errno)
             rospy.logdebug(e)
 
     # TODO: Need to make this work when more than one error is raised
