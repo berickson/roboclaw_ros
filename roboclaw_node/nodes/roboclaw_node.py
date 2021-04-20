@@ -146,7 +146,7 @@ class Node:
         rospy.loginfo("Connecting to roboclaw")
         dev_name = rospy.get_param("~dev", "/dev/ttyACM0")
         baud_rate = int(rospy.get_param("~baud", "115200"))
-
+        
         self.address = int(rospy.get_param("~address", "128"))
         if self.address > 0x87 or self.address < 0x80:
             rospy.logfatal("Address out of range")
@@ -179,6 +179,8 @@ class Node:
 
         roboclaw.SpeedAccelM1M2_2(self.address, 0, 0, 0, 0)
         roboclaw.ResetEncoders(self.address)
+
+        roboclaw.WriteSerialTimeout(self.address, float(rospy.get_param("~serial_timeout", "1.0")));
 
         self.MAX_SPEED = float(rospy.get_param("~max_speed", "2.0"))
         self.TICKS_PER_METER = float(rospy.get_param("~ticks_per_meter", "4342.2"))
@@ -306,6 +308,7 @@ class Node:
             stat.add("Logic Batt V", float(roboclaw.ReadLogicBatteryVoltage(self.address)[1] / 10.0))
             stat.add("Temp1 C", float(roboclaw.ReadTemp(self.address)[1] / 10.0))
             stat.add("Temp2 C", float(roboclaw.ReadTemp2(self.address)[1] / 10.0))
+            stat.add("Serial Timeout", roboclaw.ReadSerialTimeout(self.address))
         except OSError as e:
             rospy.logwarn("Diagnostics OSError: %d", e.errno)
             rospy.logdebug(e)

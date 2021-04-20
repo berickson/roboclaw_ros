@@ -23,6 +23,8 @@ class Cmd:
     MIXEDLEFT = 11
     MIXEDFB = 12
     MIXEDLR = 13
+    SETSERIALTIMEOUT = 14
+    GETSERIALTIMEOUT = 15
     GETM1ENC = 16
     GETM2ENC = 17
     GETM1SPEED = 18
@@ -750,6 +752,13 @@ def ForwardBackwardMixed(address, val):
 
 def LeftRightMixed(address, val):
     return _write1(address, Cmd.MIXEDLR, val)
+
+
+def WriteSerialTimeout(address, seconds):
+    return _write1(address, Cmd.SETSERIALTIMEOUT, int(seconds*10));
+
+def ReadSerialTimeout(address):
+    return _read1(address, Cmd.GETSERIALTIMEOUT)[1]/10.0;
 
 
 def ReadEncM1(address):
