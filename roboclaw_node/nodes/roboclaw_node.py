@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from math import pi, cos, sin
 
 import diagnostic_msgs
@@ -167,6 +167,7 @@ class Node:
 
         try:
             version = roboclaw.ReadVersion(self.address)
+            rospy.loginfo(f"roboclaw version: {version}")
         except Exception as e:
             rospy.logwarn("Problem getting roboclaw version")
             rospy.logdebug(e)
@@ -278,7 +279,7 @@ class Node:
 
         try:
             # This is a hack way to keep a poorly tuned PID from making noise at speed 0
-            if False and vr_ticks is 0 and vl_ticks is 0:
+            if False and vr_ticks == 0 and vl_ticks == 0:
                 roboclaw.ForwardM1(self.address, 0)
                 roboclaw.ForwardM2(self.address, 0)
             else:

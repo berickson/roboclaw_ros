@@ -119,23 +119,29 @@ def crc_update(data):
             _crc = ((_crc << 1) ^ 0x1021)
         else:
             _crc <<= 1
+    _crc = _crc & 0xffff
     return
 
 
 def _sendcommand(address, command):
     crc_clear()
-    crc_update(address)
-    port.write(chr(address))
-    crc_update(command)
-    port.write(chr(command))
+    #print(f"address: {address} command: {command}")
+    crc_update(int(address))
+    port.write(chr(address).encode())
+    crc_update(int(command))
+    port.write(chr(command).encode())
     return
 
 
 def _readchecksumword():
+    #print("reading checksum")
     data = port.read(2)
+    #print(f"data: {data}")
     if len(data) == 2:
-        crc = (ord(data[0]) << 8) | ord(data[1])
+        crc = (data[0] << 8) | data[1]
+        #print(f"crc: {crc}")
         return 1, crc
+    print("failed to read checksum")
     return 0, 0
 
 
@@ -181,7 +187,8 @@ def _readslong():
 
 def _writebyte(val):
     crc_update(val & 0xFF)
-    port.write(chr(val & 0xFF))
+    #print(f"writing byte: {val:x}")
+    port.write(bytearray([val & 0xFF]))
 
 
 def _writesbyte(val):
@@ -216,9 +223,9 @@ def _read1(address, cmd):
         _sendcommand(address, cmd)
         val1 = _readbyte()
         if val1[0]:
-            crc = _readchecksumword()
-            if crc[0]:
-                if _crc & 0xFFFF != crc[1] & 0xFFFF:
+            ok, crc = _readchecksumword()
+            if ok:
+                if _crc != crc:
                     return 0, 0
                 return 1, val1[1]
         trys -= 1
@@ -235,9 +242,9 @@ def _read2(address, cmd):
         _sendcommand(address, cmd)
         val1 = _readword()
         if val1[0]:
-            crc = _readchecksumword()
-            if crc[0]:
-                if _crc & 0xFFFF != crc[1] & 0xFFFF:
+            ok, crc = _readchecksumword()
+            if ok:
+                if _crc != crc:
                     return 0, 0
                 return 1, val1[1]
         trys -= 1
@@ -254,9 +261,9 @@ def _read4(address, cmd):
         _sendcommand(address, cmd)
         val1 = _readlong()
         if val1[0]:
-            crc = _readchecksumword()
-            if crc[0]:
-                if _crc & 0xFFFF != crc[1] & 0xFFFF:
+            ok, crc = _readchecksumword()
+            if ok:
+                if _crc != crc:
                     return 0, 0
                 return 1, val1[1]
         trys -= 1
@@ -275,9 +282,9 @@ def _read4_1(address, cmd):
         if val1[0]:
             val2 = _readbyte()
             if val2[0]:
-                crc = _readchecksumword()
-                if crc[0]:
-                    if _crc & 0xFFFF != crc[1] & 0xFFFF:
+                ok, crc = _readchecksumword()
+                if ok:
+                    if _crc != crc:
                         return 0, 0
                     return 1, val1[1], val2[1]
         trys -= 1
@@ -305,19 +312,22 @@ def _read_n(address, cmd, args):
             data.append(val[1])
         if failed:
             continue
-        crc = _readchecksumword()
+        ok, crc = _readchecksumword()
         if crc[0]:
-            if _crc & 0xFFFF == crc[1] & 0xFFFF:
+            if _crc == crc:
                 return data
     return 0, 0, 0, 0, 0
 
 
 def _writechecksum():
     global _crc
+    #print(f"writing checksum {_crc:x}")
     _writeword(_crc & 0xFFFF)
     val = _readbyte()
     if val[0]:
+        #print(f"_writechecksum returned ok ****************************************")
         return True
+    #print(f"_writechecksum returned false")
     return False
 
 
@@ -787,25 +797,35 @@ def ReadVersion(address):
     while 1:
         port.flushInput()
         _sendcommand(address, Cmd.GETVERSION)
-        str = ""
+        str = b""
         passed = True
         for i in range(0, 48):
             data = port.read(1)
+            #print(f'read {data}')
             if len(data):
+                #print("updating checksum")
                 val = ord(data)
                 crc_update(val)
                 if val == 0:
                     break
-                str += data[0]
+                #print("adding to string")
+                str += data[0:1]
+                #print("str: {str}")
             else:
+                #print("nothing to read")
                 passed = False
                 break
+        #print(f"passed: {passed}")
+        #print("checking crc")
         if passed:
-            crc = _readchecksumword()
-            if crc[0]:
-                if _crc & 0xFFFF == crc[1] & 0xFFFF:
+            ok, crc = _readchecksumword()
+            #print(f"got crc: {crc}")
+            if ok:
+                if _crc == crc:
+                    #print("crc ok")
                     return 1, str
                 else:
+                    print(f"crc bad, crc:{crc} _crc:{_crc}")
                     time.sleep(0.01)
         trys -= 1
         if trys == 0:
@@ -1080,9 +1100,9 @@ def ReadPinFunctions(address):
             if val1[0]:
                 val3 = _readbyte()
                 if val1[0]:
-                    crc = _readchecksumword()
-                    if crc[0]:
-                        if _crc & 0xFFFF != crc[1] & 0xFFFF:
+                    ok,crc = _readchecksumword()
+                    if ok:
+                        if _crc != crc:
                             return 0, 0
                         return 1, val1[1], val2[1], val3[1]
         trys -= 1
