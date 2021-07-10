@@ -15,16 +15,18 @@ __author__ = "bwbazemore@uga.edu (Brad Bazemore)"
 # TODO need to find some better was of handling OSerror 11 or preventing it, any ideas?
 
 class EncoderOdom:
-    def __init__(self, ticks_per_meter, base_width):
+    def __init__(self, ticks_per_meter, base_width, odom_topic = "/odom", odom_frame = "odom", base_link_frame = "base_link"):
         self.TICKS_PER_METER = ticks_per_meter
         self.BASE_WIDTH = base_width
-        self.odom_pub = rospy.Publisher('/odom', Odometry, queue_size=10)
+        self.odom_pub = rospy.Publisher(odom_topic, Odometry, queue_size=10)
         self.cur_x = 0
         self.cur_y = 0
         self.cur_theta = 0.0
         self.last_enc_left = 0
         self.last_enc_right = 0
         self.last_enc_time = rospy.Time.now()
+        self.odom_frame = odom_frame
+        self.base_link_frame = base_link_frame
 
     @staticmethod
     def normalize_angle(angle):
@@ -90,12 +92,12 @@ class EncoderOdom:
         br.sendTransform((cur_x, cur_y, 0),
                          tf.transformations.quaternion_from_euler(0, 0, cur_theta),
                          current_time,
-                         "base_link",
-                         "odom")
+                         self.base_link_frame,
+                         self.odom_frame)
 
         odom = Odometry()
         odom.header.stamp = current_time
-        odom.header.frame_id = 'odom'
+        odom.header.frame_id = self.odom_frame
 
         odom.pose.pose.position.x = cur_x
         odom.pose.pose.position.y = cur_y
@@ -109,7 +111,7 @@ class EncoderOdom:
         odom.pose.covariance[28] = 99999
         odom.pose.covariance[35] = 0.01
 
-        odom.child_frame_id = 'base_link'
+        odom.child_frame_id = self.base_link_frame
         odom.twist.twist.linear.x = vx
         odom.twist.twist.linear.y = 0
         odom.twist.twist.angular.z = vth
@@ -146,6 +148,9 @@ class Node:
         rospy.loginfo("Connecting to roboclaw")
         dev_name = rospy.get_param("~dev", "/dev/ttyACM0")
         baud_rate = int(rospy.get_param("~baud", "115200"))
+        self.odom_frame = rospy.get_param("~odom_frame","odom")
+        self.base_link_frame = rospy.get_param("~base_link_frame","base_link")
+        self.odom_topic = rospy.get_param("~odom_topic","/odom")
         
         self.address = int(rospy.get_param("~address", "128"))
         if self.address > 0x87 or self.address < 0x80:
@@ -188,7 +193,7 @@ class Node:
         self.BASE_WIDTH = float(rospy.get_param("~base_width", "0.315"))
         self.LEFT_MOTOR_NUMBER = int(rospy.get_param("~left_motor_number",1))
 
-        self.encodm = EncoderOdom(self.TICKS_PER_METER, self.BASE_WIDTH)
+        self.encodm = EncoderOdom(self.TICKS_PER_METER, self.BASE_WIDTH, odom_frame = self.odom_frame, odom_topic = self.odom_topic, base_link_frame=self.base_link_frame)
         self.last_set_speed_time = rospy.get_rostime()
         self.stopped = True
 
